@@ -99,7 +99,7 @@ The UI is inspired by the **M-Pesa mobile app** — Kenya's most widely used mob
 
 ## 👤 Author
 
-Built with ❤️ from Nairobi, Kenya.
+Emmanuel Wangila Wakhongola
 
 ---
 
