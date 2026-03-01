@@ -823,8 +823,8 @@ body::before {
     <div class="modal-handle"></div>
     <h3>Add Transaction</h3>
     <div class="type-toggle">
-      <button class="type-btn active income" id="typeIncome" onclick="setType('income')">↑ Income</button>
-      <button class="type-btn expense" id="typeExpense" onclick="setType('expense')">↓ Expense</button>
+      <button class="type-btn active income" id="typeIncome" onclick="setTransactionType('income')">↑ Income</button>
+      <button class="type-btn expense" id="typeExpense" onclick="setTransactionType('expense')">↓ Expense</button>
     </div>
     <div class="fg"><label>Description</label><input type="text" id="txDesc" placeholder="e.g. Salary, Groceries..."></div>
     <div class="fg"><label>Amount (KES)</label><input type="number" id="txAmount" placeholder="0" min="0"></div>
@@ -856,25 +856,25 @@ const ICONS  = { 'Income':'💰','Rent/Bills':'🏠','Food':'🛒','Transport':'
 const COLORS = { 'Rent/Bills':'#e8192c','Food':'#00a651','Transport':'#f59e0b','Savings':'#2563eb','Entertainment':'#9333ea','Health':'#f97316','Other':'#64748b' };
 
 // ── STATE ─────────────────────────────────────────────────────
-let curDate  = new Date();
-let txType   = 'income';
-let selDay   = null;
+let currentDate  = new Date();
+let transactionType   = 'income';
+let selectedDay   = null;
 let activeView = 'overview';
 let transactions = JSON.parse(localStorage.getItem('emf_tx') || '[]');
 let dailyLimit   = parseFloat(localStorage.getItem('emf_dlimit') || '0');
 
 // ── HELPERS ───────────────────────────────────────────────────
-const fmt = n => 'KES ' + Math.round(n).toLocaleString('en-KE');
-const fmtShort = n => n >= 1000 ? 'KES '+(n/1000).toFixed(1)+'K' : fmt(n);
-const isoDate = d => d.toISOString().split('T')[0];
-const todayStr = () => isoDate(new Date());
+const formatCurrency = n => 'KES ' + Math.round(n).toLocaleString('en-KE');
+const formatCurrencyShort = n => n >= 1000 ? 'KES '+(n/1000).toFixed(1)+'K' : formatCurrency(n);
+const toIsoDateString = d => d.toISOString().split('T')[0];
+const getTodayDateString = () => toIsoDateString(new Date());
 
-const getMonthTx = () => {
-  const y = curDate.getFullYear(), m = curDate.getMonth();
+const getMonthTransactions = () => {
+  const y = currentDate.getFullYear(), m = currentDate.getMonth();
   return transactions.filter(t => { const d = new Date(t.date); return d.getFullYear()===y && d.getMonth()===m; });
 };
-const getDaySpend = dateStr => transactions.filter(t=>t.date===dateStr&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
-const getDayTx    = dateStr => transactions.filter(t=>t.date===dateStr);
+const getDayTotalSpending = dateStr => transactions.filter(t=>t.date===dateStr&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
+const getDayTransactions    = dateStr => transactions.filter(t=>t.date===dateStr);
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function switchView(v) {
@@ -884,12 +884,12 @@ function switchView(v) {
   document.getElementById('view-'+v).classList.add('active');
   render();
 }
-document.getElementById('prevMonth').onclick = () => { curDate.setMonth(curDate.getMonth()-1); selDay=null; render(); };
-document.getElementById('nextMonth').onclick = () => { curDate.setMonth(curDate.getMonth()+1); selDay=null; render(); };
+document.getElementById('prevMonth').onclick = () => { currentDate.setMonth(currentDate.getMonth()-1); selectedDay=null; render(); };
+document.getElementById('nextMonth').onclick = () => { currentDate.setMonth(currentDate.getMonth()+1); selectedDay=null; render(); };
 
 // ── MODAL ─────────────────────────────────────────────────────
 function openModal(pre) {
-  document.getElementById('txDate').value = pre || todayStr();
+  document.getElementById('txDate').value = pre || getTodayDateString();
   document.getElementById('txDesc').value = '';
   document.getElementById('txAmount').value = '';
   document.getElementById('modalOverlay').classList.add('open');
@@ -897,8 +897,8 @@ function openModal(pre) {
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 document.getElementById('modalOverlay').onclick = e => { if(e.target===e.currentTarget) closeModal(); };
 
-function setType(t) {
-  txType = t;
+function setTransactionType(t) {
+  transactionType = t;
   document.getElementById('typeIncome').classList.toggle('active', t==='income');
   document.getElementById('typeIncome').classList.toggle('income', t==='income');
   document.getElementById('typeExpense').classList.toggle('active', t==='expense');
@@ -913,13 +913,13 @@ function saveTransaction() {
   const cat    = document.getElementById('txCat').value;
   const date   = document.getElementById('txDate').value;
   if(!desc||!amount||!date) { alert('Please fill in all fields.'); return; }
-  transactions.push({ id:Date.now(), type:txType, desc, amount, cat, date });
+  transactions.push({ id:Date.now(), type:transactionType, desc, amount, cat, date });
   localStorage.setItem('emf_tx', JSON.stringify(transactions));
   closeModal();
   render();
 }
 
-function deleteTx(id) {
+function deleteTransaction(id) {
   transactions = transactions.filter(t => t.id!==id);
   localStorage.setItem('emf_tx', JSON.stringify(transactions));
   render();
@@ -938,53 +938,53 @@ function setDailyLimit() {
 
 // ── MAIN RENDER ───────────────────────────────────────────────
 function render() {
-  document.getElementById('currentMonth').textContent = curDate.toLocaleString('default',{month:'long',year:'numeric'});
+  document.getElementById('currentMonth').textContent = currentDate.toLocaleString('default',{month:'long',year:'numeric'});
   if(dailyLimit) document.getElementById('dlInput').value = dailyLimit;
 
-  const txs      = getMonthTx();
+  const txs      = getMonthTransactions();
   const income   = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const net      = income - expenses;
-  const sRate    = income>0 ? Math.round((net/income)*100) : 0;
-  const todaySpend = getDaySpend(todayStr());
+  const savingsRate    = income>0 ? Math.round((net/income)*100) : 0;
+  const todaySpend = getDayTotalSpending(getTodayDateString());
 
   // Hero
   document.getElementById('heroNet').textContent   = Math.round(net).toLocaleString('en-KE');
-  document.getElementById('heroSub').textContent   = `Savings rate: ${sRate}% · ${txs.length} transactions`;
-  document.getElementById('pillIncome').textContent   = fmtShort(income);
-  document.getElementById('pillExpenses').textContent = fmtShort(expenses);
-  document.getElementById('pillToday').textContent    = fmtShort(todaySpend);
+  document.getElementById('heroSub').textContent   = `Savings rate: ${savingsRate}% · ${txs.length} transactions`;
+  document.getElementById('pillIncome').textContent   = formatCurrencyShort(income);
+  document.getElementById('pillExpenses').textContent = formatCurrencyShort(expenses);
+  document.getElementById('pillToday').textContent    = formatCurrencyShort(todaySpend);
 
-  if(activeView==='overview') renderOverview(txs,income,expenses,net,sRate,todaySpend);
+  if(activeView==='overview') renderOverview(txs,income,expenses,net,savingsRate,todaySpend);
   if(activeView==='daily')    renderDaily(txs,todaySpend);
   if(activeView==='log')      renderLog();
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────
-function renderOverview(txs,income,expenses,net,sRate,todaySpend) {
+function renderOverview(txs,income,expenses,net,savingsRate,todaySpend) {
   // Stat cards
-  document.getElementById('ovIncome').textContent   = fmtShort(income);
-  document.getElementById('ovExpense').textContent  = fmtShort(expenses);
-  document.getElementById('ovToday').textContent    = fmtShort(todaySpend);
+  document.getElementById('ovIncome').textContent   = formatCurrencyShort(income);
+  document.getElementById('ovExpense').textContent  = formatCurrencyShort(expenses);
+  document.getElementById('ovToday').textContent    = formatCurrencyShort(todaySpend);
   document.getElementById('ovIncomeSub').textContent   = txs.filter(t=>t.type==='income').length+' entries';
   document.getElementById('ovExpenseSub').textContent  = txs.filter(t=>t.type==='expense').length+' entries';
-  document.getElementById('ovTodaySub').textContent    = dailyLimit?'Limit: '+fmtShort(dailyLimit):'Daily limit: not set';
+  document.getElementById('ovTodaySub').textContent    = dailyLimit?'Limit: '+formatCurrencyShort(dailyLimit):'Daily limit: not set';
   document.getElementById('ovToday').style.color    = dailyLimit&&todaySpend>dailyLimit?'var(--mp-red)':'var(--mp-blue)';
 
   // Budget bars
-  const catSpend = {};
-  txs.filter(t=>t.type==='expense').forEach(t => { catSpend[t.cat]=(catSpend[t.cat]||0)+t.amount; });
+  const categorySpending = {};
+  txs.filter(t=>t.type==='expense').forEach(t => { categorySpending[t.cat]=(categorySpending[t.cat]||0)+t.amount; });
 
   let bars = '';
   Object.entries(BUDGET).forEach(([cat,bgt]) => {
-    const spent = catSpend[cat]||0;
+    const spent = categorySpending[cat]||0;
     const pct   = Math.min((spent/bgt)*100,100);
     const cls   = pct>=100?'over':pct>=80?'warn':'good';
     const badge = pct>=100?'<span class="badge over">Over</span>':pct>=80?'<span class="badge warn">Near limit</span>':'';
     bars += `<div class="prog-item">
       <div class="prog-meta">
         <span class="prog-name">${ICONS[cat]||'📦'} ${cat}${badge}</span>
-        <span class="prog-nums">${fmtShort(spent)} <span style="color:var(--muted);font-weight:500">/ ${fmtShort(bgt)}</span></span>
+        <span class="prog-nums">${formatCurrencyShort(spent)} <span style="color:var(--muted);font-weight:500">/ ${formatCurrencyShort(bgt)}</span></span>
       </div>
       <div class="prog-track"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div>
     </div>`;
@@ -992,7 +992,7 @@ function renderOverview(txs,income,expenses,net,sRate,todaySpend) {
   document.getElementById('budgetBars').innerHTML = bars;
 
   // Donut
-  renderDonut(catSpend, expenses);
+  renderDonutChart(categorySpending, expenses);
 
   // Transactions
   const sorted = [...txs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
@@ -1000,10 +1000,10 @@ function renderOverview(txs,income,expenses,net,sRate,todaySpend) {
   document.getElementById('txList').innerHTML = sorted.length===0
     ? '<div class="empty-state"><span>💳</span>No transactions yet. Hit + Add to get started.</div>'
     : sorted.map(t => {
-        const isInc = t.type==='income';
+        const isIncome = t.type==='income';
         return `<div class="tx-item">
           <div class="tx-left">
-            <div class="tx-icon-wrap ${isInc?'income-icon':'expense-icon'}">${ICONS[t.cat]||'📦'}</div>
+            <div class="tx-icon-wrap ${isIncome?'income-icon':'expense-icon'}">${ICONS[t.cat]||'📦'}</div>
             <div>
               <div class="tx-desc">${t.desc}</div>
               <div class="tx-cat">${t.cat} · ${new Date(t.date).toLocaleDateString('en-KE',{day:'numeric',month:'short'})}</div>
@@ -1011,17 +1011,17 @@ function renderOverview(txs,income,expenses,net,sRate,todaySpend) {
           </div>
           <div class="tx-right" style="display:flex;align-items:center;gap:0.5rem;">
             <div>
-              <div class="tx-amount ${isInc?'credit':'debit'}">${isInc?'+':'-'}${fmt(t.amount)}</div>
+              <div class="tx-amount ${isIncome?'credit':'debit'}">${isIncome?'+':'-'}${formatCurrency(t.amount)}</div>
             </div>
-            <button class="del-btn" onclick="deleteTx(${t.id})" title="Delete">🗑</button>
+            <button class="del-btn" onclick="deleteTransaction(${t.id})" title="Delete">🗑</button>
           </div>
         </div>`;
       }).join('');
 
   // Weekly check
-  const living = (catSpend['Food']||0)+(catSpend['Transport']||0)+(catSpend['Entertainment']||0);
-  const lBgt   = BUDGET['Food']+BUDGET['Transport']+BUDGET['Entertainment'];
-  const sc = (id,ok,y,n,warnMode) => {
+  const living = (categorySpending['Food']||0)+(categorySpending['Transport']||0)+(categorySpending['Entertainment']||0);
+  const livingBudgetTotal   = BUDGET['Food']+BUDGET['Transport']+BUDGET['Entertainment'];
+  const setCheckStatus = (id,ok,y,n,warnMode) => {
     const el = document.getElementById(id);
     el.textContent=ok?y:n;
     el.className='check-a '+(ok?'ok':(warnMode?'warn-c':'bad'));
@@ -1029,45 +1029,45 @@ function renderOverview(txs,income,expenses,net,sRate,todaySpend) {
   if(income===0) {
     ['chkLiving','chkSavings','chkUnexpected','chkNet'].forEach(id=>{ const el=document.getElementById(id); el.textContent='—'; el.style.color='var(--muted)'; el.className='check-a'; });
   } else {
-    sc('chkLiving', living<=lBgt, '✓ Yes', '✗ Over');
-    sc('chkSavings', sRate>=10, '✓ Yes', '✗ No');
-    sc('chkNet', net>=0, '✓ Yes', '✗ No');
-    const hasOther=(catSpend['Other']||0)>0;
+    setCheckStatus('chkLiving', living<=livingBudgetTotal, '✓ Yes', '✗ Over');
+    setCheckStatus('chkSavings', savingsRate>=10, '✓ Yes', '✗ No');
+    setCheckStatus('chkNet', net>=0, '✓ Yes', '✗ No');
+    const hasOther=(categorySpending['Other']||0)>0;
     document.getElementById('chkUnexpected').textContent=hasOther?'⚠ Maybe':'✓ No';
     document.getElementById('chkUnexpected').className='check-a '+(hasOther?'warn-c':'ok');
   }
   let tip = '';
   if(income===0)       tip = '<strong>💡 Tip:</strong> Add your income first, then log your daily expenses to see your flow!';
   else if(net<0)       tip = '<strong>🚨 Alert:</strong> You\'re spending more than you earn this month. Review your expense categories.';
-  else if(sRate<10)    tip = `<strong>💡 Tip:</strong> Try to save at least 10% of income. You're at ${sRate}% — almost there!`;
-  else if(living>lBgt) tip = '<strong>⚠️ Watch out:</strong> Your daily living spend (Food + Transport + Entertainment) has exceeded its budget.';
+  else if(savingsRate<10)    tip = `<strong>💡 Tip:</strong> Try to save at least 10% of income. You're at ${savingsRate}% — almost there!`;
+  else if(living>livingBudgetTotal) tip = '<strong>⚠️ Watch out:</strong> Your daily living spend (Food + Transport + Entertainment) has exceeded its budget.';
   else                 tip = '<strong>🎉 Great work!</strong> Your money flow is healthy this month. Keep it up!';
   document.getElementById('tipBox').innerHTML = tip;
 
   // Streak
-  const dim = new Date(curDate.getFullYear(),curDate.getMonth()+1,0).getDate();
+  const daysInMonth = new Date(currentDate.getFullYear(),currentDate.getMonth()+1,0).getDate();
   const today = new Date();
-  const isCurMo = curDate.getMonth()===today.getMonth()&&curDate.getFullYear()===today.getFullYear();
+  const isCurrentMonth = currentDate.getMonth()===today.getMonth()&&currentDate.getFullYear()===today.getFullYear();
   const activeDays = new Set(txs.map(t=>new Date(t.date).getDate()));
   document.getElementById('streakNum').textContent = activeDays.size;
-  document.getElementById('streakDots').innerHTML = Array.from({length:dim},(_,i)=>{
-    const d=i+1, isT=isCurMo&&d===today.getDate();
+  document.getElementById('streakDots').innerHTML = Array.from({length:daysInMonth},(_,i)=>{
+    const d=i+1, isT=isCurrentMonth&&d===today.getDate();
     return `<div class="s-dot ${isT?'today-d':activeDays.has(d)?'done':''}" title="Day ${d}"></div>`;
   }).join('');
 }
 
-function renderDonut(catSpend, total) {
+function renderDonutChart(categorySpending, total) {
   const svg = document.getElementById('donutSvg');
   const leg = document.getElementById('donutLegend');
   const C = 2*Math.PI*38;
-  const ents = Object.entries(catSpend).filter(([,v])=>v>0);
-  if(!ents.length||!total) {
+  const categoryEntries = Object.entries(categorySpending).filter(([,v])=>v>0);
+  if(!categoryEntries.length||!total) {
     svg.innerHTML='<circle cx="50" cy="50" r="38" fill="none" stroke="#eef4f1" stroke-width="13"/>';
     leg.innerHTML='<div style="color:var(--muted);font-size:0.74rem;font-weight:500">No expense data yet</div>';
     return;
   }
   let paths=`<circle cx="50" cy="50" r="38" fill="none" stroke="#eef4f1" stroke-width="13"/>`, lo='', off=-0.25*C;
-  ents.sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
+  categoryEntries.sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
     const p=val/total, dash=p*C, col=COLORS[cat]||'#888';
     paths+=`<circle cx="50" cy="50" r="38" fill="none" stroke="${col}" stroke-width="13" stroke-dasharray="${dash} ${C-dash}" stroke-dashoffset="${off}" stroke-linecap="butt"/>`;
     off-=dash;
@@ -1078,31 +1078,31 @@ function renderDonut(catSpend, total) {
 
 // ── DAILY TRACKER ─────────────────────────────────────────────
 function renderDaily(txs, todaySpend) {
-  const dim = new Date(curDate.getFullYear(),curDate.getMonth()+1,0).getDate();
+  const daysInMonth = new Date(currentDate.getFullYear(),currentDate.getMonth()+1,0).getDate();
 
   // Build daily map
   const dailyMap = {};
-  for(let d=1;d<=dim;d++){
-    const ds = curDate.getFullYear()+'-'+String(curDate.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    dailyMap[ds] = getDaySpend(ds);
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = currentDate.getFullYear()+'-'+String(currentDate.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    dailyMap[ds] = getDayTotalSpending(ds);
   }
   const vals = Object.values(dailyMap);
   const maxSpend = Math.max(...vals,1);
-  const totalExp = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const totalExpenses = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const daysWithSpend = vals.filter(v=>v>0).length;
-  const avgDaily = daysWithSpend>0 ? totalExp/daysWithSpend : 0;
+  const avgDaily = daysWithSpend>0 ? totalExpenses/daysWithSpend : 0;
 
   // Hero
-  document.getElementById('dhSpent').textContent = fmt(todaySpend);
+  document.getElementById('dhSpent').textContent = formatCurrency(todaySpend);
   if(dailyLimit){
     const rem = dailyLimit-todaySpend;
-    document.getElementById('dhRemain').textContent = rem>=0?fmt(rem):'Over '+fmt(-rem);
+    document.getElementById('dhRemain').textContent = rem>=0?formatCurrency(rem):'Over '+formatCurrency(-rem);
     document.getElementById('dhRemain').style.color = rem>=0?'var(--mp-green-dark)':'var(--mp-red)';
   } else {
     document.getElementById('dhRemain').textContent='Set a limit';
     document.getElementById('dhRemain').style.color='var(--muted)';
   }
-  document.getElementById('dhAvg').textContent = fmt(avgDaily);
+  document.getElementById('dhAvg').textContent = formatCurrency(avgDaily);
 
   // Today bar
   const today = new Date();
@@ -1111,9 +1111,9 @@ function renderDaily(txs, todaySpend) {
   const fill = document.getElementById('todayBarFill');
   fill.style.width = (dailyLimit?pct:0)+'%';
   fill.className = 'today-bar-inner '+(pct>=100?'tb-over':pct>=80?'tb-warn':'tb-good');
-  document.getElementById('todayBarMeta').textContent = dailyLimit?fmt(todaySpend)+' / '+fmt(dailyLimit):'No daily limit set';
+  document.getElementById('todayBarMeta').textContent = dailyLimit?formatCurrency(todaySpend)+' / '+formatCurrency(dailyLimit):'No daily limit set';
 
-  const todayTxs = getDayTx(todayStr()).filter(t=>t.type==='expense').sort((a,b)=>b.amount-a.amount);
+  const todayTxs = getDayTransactions(getTodayDateString()).filter(t=>t.type==='expense').sort((a,b)=>b.amount-a.amount);
   document.getElementById('todayTxList').innerHTML = todayTxs.length===0
     ? '<div class="empty-state"><span>☕</span>No spending today. <span style="color:var(--mp-green-dark);cursor:pointer;font-weight:700" onclick="openModal()">+ Add entry</span></div>'
     : todayTxs.map(t=>`<div class="tx-item">
@@ -1122,35 +1122,35 @@ function renderDaily(txs, todaySpend) {
           <div><div class="tx-desc">${t.desc}</div><div class="tx-cat">${t.cat}</div></div>
         </div>
         <div class="tx-right" style="display:flex;align-items:center;gap:0.5rem;">
-          <div class="tx-amount debit">-${fmt(t.amount)}</div>
-          <button class="del-btn" onclick="deleteTx(${t.id})">🗑</button>
+          <div class="tx-amount debit">-${formatCurrency(t.amount)}</div>
+          <button class="del-btn" onclick="deleteTransaction(${t.id})">🗑</button>
         </div>
       </div>`).join('');
 
   // Calendar
   document.getElementById('calDow').innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow-lbl">${d}</div>`).join('');
-  const firstDow = new Date(curDate.getFullYear(),curDate.getMonth(),1).getDay();
-  const isCurMo  = curDate.getMonth()===today.getMonth()&&curDate.getFullYear()===today.getFullYear();
+  const firstDow = new Date(currentDate.getFullYear(),currentDate.getMonth(),1).getDay();
+  const isCurrentMonth  = currentDate.getMonth()===today.getMonth()&&currentDate.getFullYear()===today.getFullYear();
   let cal = Array(firstDow).fill('<div class="cal-day empty"></div>').join('');
-  for(let d=1;d<=dim;d++){
-    const ds = curDate.getFullYear()+'-'+String(curDate.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = currentDate.getFullYear()+'-'+String(currentDate.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const spend=dailyMap[ds]||0;
     const pctH=spend/maxSpend;
     const h = spend===0?0:pctH<0.2?1:pctH<0.4?2:pctH<0.6?3:pctH<0.8?4:5;
-    const isT=isCurMo&&d===today.getDate();
-    const isSel=selDay===ds;
+    const isT=isCurrentMonth&&d===today.getDate();
+    const isSel=selectedDay===ds;
     cal+=`<div class="cal-day h${h} ${isT?'today-cal':''} ${isSel?'selected':''} ${spend>0?'has-data':''}"
-      onclick="selectDay('${ds}')" title="${ds}: ${fmt(spend)}">${d}</div>`;
+      onclick="selectCalendarDay('${ds}')" title="${ds}: ${formatCurrency(spend)}">${d}</div>`;
   }
   document.getElementById('calGrid').innerHTML=cal;
 
   // Day detail
-  if(selDay){
-    const dayTxs  = getDayTx(selDay).filter(t=>t.type==='expense');
+  if(selectedDay){
+    const dayTxs  = getDayTransactions(selectedDay).filter(t=>t.type==='expense');
     const daySpend = dayTxs.reduce((s,t)=>s+t.amount,0);
-    document.getElementById('selDayName').textContent  = new Date(selDay).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long'});
+    document.getElementById('selDayName').textContent  = new Date(selectedDay).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long'});
     document.getElementById('selDayName').style.color  = 'var(--text)';
-    document.getElementById('selDayTotal').textContent = fmt(daySpend);
+    document.getElementById('selDayTotal').textContent = formatCurrency(daySpend);
     document.getElementById('selDayTotal').style.color = dailyLimit&&daySpend>dailyLimit?'var(--mp-red)':'var(--mp-green-dark)';
 
     if(dailyLimit&&daySpend>0){
@@ -1163,15 +1163,15 @@ function renderDaily(txs, todaySpend) {
     } else { document.getElementById('selDayBar').style.display='none'; }
 
     document.getElementById('selDayTxList').innerHTML = dayTxs.length===0
-      ? `<div class="empty-state"><span>🌿</span>No spending on this day. <span style="color:var(--mp-green-dark);cursor:pointer;font-weight:700" onclick="openModal('${selDay}')">+ Add</span></div>`
+      ? `<div class="empty-state"><span>🌿</span>No spending on this day. <span style="color:var(--mp-green-dark);cursor:pointer;font-weight:700" onclick="openModal('${selectedDay}')">+ Add</span></div>`
       : dayTxs.map(t=>`<div class="tx-item">
           <div class="tx-left">
             <div class="tx-icon-wrap expense-icon">${ICONS[t.cat]||'📦'}</div>
             <div><div class="tx-desc">${t.desc}</div><div class="tx-cat">${t.cat}</div></div>
           </div>
           <div class="tx-right" style="display:flex;align-items:center;gap:0.4rem;">
-            <div class="tx-amount debit">-${fmt(t.amount)}</div>
-            <button class="del-btn" onclick="deleteTx(${t.id})">🗑</button>
+            <div class="tx-amount debit">-${formatCurrency(t.amount)}</div>
+            <button class="del-btn" onclick="deleteTransaction(${t.id})">🗑</button>
           </div>
         </div>`).join('');
 
@@ -1184,7 +1184,7 @@ function renderDaily(txs, todaySpend) {
       Object.entries(cats).sort((a,b)=>b[1]-a[1]).forEach(([cat,amt])=>{
         const p=Math.round((amt/catMax)*100);
         ch+=`<div class="prog-item" style="margin-bottom:0.6rem;">
-          <div class="prog-meta"><span class="prog-name" style="font-size:0.76rem">${ICONS[cat]||'📦'} ${cat}</span><span class="prog-nums" style="font-size:0.76rem">${fmt(amt)}</span></div>
+          <div class="prog-meta"><span class="prog-name" style="font-size:0.76rem">${ICONS[cat]||'📦'} ${cat}</span><span class="prog-nums" style="font-size:0.76rem">${formatCurrency(amt)}</span></div>
           <div class="prog-track"><div class="prog-fill good" style="width:${p}%;background:${COLORS[cat]||'var(--mp-green)'}"></div></div>
         </div>`;
       });
@@ -1207,14 +1207,14 @@ function renderDaily(txs, todaySpend) {
       return `<div class="prog-item">
         <div class="prog-meta">
           <span class="prog-name">${medals[i]} ${lbl} ${isOver?'<span class="badge over">Over limit</span>':''}</span>
-          <span class="prog-nums">${fmt(amt)}</span>
+          <span class="prog-nums">${formatCurrency(amt)}</span>
         </div>
         <div class="prog-track"><div class="prog-fill ${isOver?'over':p>70?'warn':'good'}" style="width:${p}%"></div></div>
       </div>`;
     }).join('');
 }
 
-function selectDay(d){ selDay=d; render(); }
+function selectCalendarDay(d){ selectedDay=d; render(); }
 
 function renderSparkline(){
   const svg=document.getElementById('sparkSvg');
@@ -1222,8 +1222,8 @@ function renderSparkline(){
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
 
   const days=[];
-  for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(isoDate(d));}
-  const vals=days.map(d=>getDaySpend(d));
+  for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(toIsoDateString(d));}
+  const vals=days.map(d=>getDayTotalSpending(d));
   const max=Math.max(...vals,1);
   const pad=10;
   const xStep=(W-pad*2)/(days.length-1);
@@ -1261,11 +1261,11 @@ function renderSparkline(){
 
 // ── FULL LOG ─────────────────────────────────────────────────
 function renderLog(){
-  const tf=document.getElementById('logFilter').value;
-  const cf=document.getElementById('logCat').value;
-  let txs=getMonthTx();
-  if(tf!=='all') txs=txs.filter(t=>t.type===tf);
-  if(cf!=='all') txs=txs.filter(t=>t.cat===cf);
+  const typeFilter=document.getElementById('logFilter').value;
+  const categoryFilter=document.getElementById('logCat').value;
+  let txs=getMonthTransactions();
+  if(typeFilter!=='all') txs=txs.filter(t=>t.type===typeFilter);
+  if(categoryFilter!=='all') txs=txs.filter(t=>t.cat===categoryFilter);
   txs.sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   if(!txs.length){
@@ -1284,18 +1284,18 @@ function renderLog(){
     html+=`<div class="day-group">
       <div class="day-group-hdr">
         <span class="dg-lbl">📅 ${lbl}</span>
-        <span class="dg-total ${isOver?'over-l':''}">${dayExp>0?'Spent: '+fmt(dayExp):''}${isOver?' ⚠ Over limit':''}</span>
+        <span class="dg-total ${isOver?'over-l':''}">${dayExp>0?'Spent: '+formatCurrency(dayExp):''}${isOver?' ⚠ Over limit':''}</span>
       </div>`;
     dayTxs.forEach(t=>{
-      const isInc=t.type==='income';
+      const isIncome=t.type==='income';
       html+=`<div class="tx-item">
         <div class="tx-left">
-          <div class="tx-icon-wrap ${isInc?'income-icon':'expense-icon'}">${ICONS[t.cat]||'📦'}</div>
+          <div class="tx-icon-wrap ${isIncome?'income-icon':'expense-icon'}">${ICONS[t.cat]||'📦'}</div>
           <div><div class="tx-desc">${t.desc}</div><div class="tx-cat">${t.cat}</div></div>
         </div>
         <div class="tx-right" style="display:flex;align-items:center;gap:0.5rem;">
-          <div class="tx-amount ${isInc?'credit':'debit'}">${isInc?'+':'-'}${fmt(t.amount)}</div>
-          <button class="del-btn" onclick="deleteTx(${t.id})">🗑</button>
+          <div class="tx-amount ${isIncome?'credit':'debit'}">${isIncome?'+':'-'}${formatCurrency(t.amount)}</div>
+          <button class="del-btn" onclick="deleteTransaction(${t.id})">🗑</button>
         </div>
       </div>`;
     });
