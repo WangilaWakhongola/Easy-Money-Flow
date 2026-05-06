@@ -2,16 +2,10 @@
 
 > A personal finance tracker inspired by M-Pesa's design language — track your daily spending, visualize budget flow, and monitor your money habits in real time.
 
-![Easy Money Flow](https://img.shields.io/badge/Status-Live-00a651?style=for-the-badge)
-![HTML](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-
----
 
 ## 🔗 Live Demo
 
-👉 **[View Live Dashboard](https://YOUR-USERNAME.github.io/easy-money-flow)**
+👉 **[View Live Dashboard](https://WangilaWakhongola.github.io/easy-money-flow)**
 
 ---
 
