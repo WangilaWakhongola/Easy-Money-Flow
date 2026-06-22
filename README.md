@@ -1,11 +1,6 @@
-# 💸 Easy Money Flow Dashboard
+# Easy Money Flow Dashboard
 
 > A personal finance tracker inspired by M-Pesa's design language — track your daily spending, visualize budget flow, and monitor your money habits in real time.
-
-
-## 🔗 Live Demo
-
-👉 **[View Live Dashboard](https://WangilaWakhongola.github.io/easy-money-flow)**
 
 ---
 
