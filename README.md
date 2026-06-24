@@ -1,97 +1,306 @@
-# Easy Money Flow Dashboard
+Easy Money Flow - Django Edition
 
-> A personal finance tracker inspired by M-Pesa's design language — track your daily spending, visualize budget flow, and monitor your money habits in real time.
+A modern personal finance tracker inspired by M-Pesa's design, built with Django and SQLite. Track daily spending, visualize budget flow, monitor money habits, and integrate with M-Pesa API for automatic transaction imports.
 
----
-
-## 📸 Features
-
-- **📊 Overview Dashboard** — Income vs expenses, budget flow bars, spending allocation donut chart
-- **📅 Daily Spending Tracker** — Set a daily limit, track today's spending with a live progress bar
-- **🗓️ Calendar Heatmap** — Visual map of every day's spending intensity for the whole month
-- **📈 30-Day Trend Chart** — Sparkline showing your spending pattern over the last 30 days
-- **📋 Full Transaction Log** — Filterable history grouped by day with over-limit alerts
-- **🔥 Logging Streak** — Gamified dot calendar showing which days you logged spending
-- **✅ Weekly Check-in** — Auto-answers 4 key financial health questions
-- **💾 Persistent Storage** — All data saved locally in your browser (no account needed)
-- **🎨 M-Pesa Design** — Built with M-Pesa's signature green palette and mobile-app feel
+Django 4.2 | Python 3.8+ | SQLite | MIT License
 
 ---
 
-## 🚀 Getting Started
+FEATURES
 
-This is a **single-file web app** — no installation, no dependencies, no build tools.
+Core Features
+- Dashboard - Real-time overview of income, expenses, and budget status
+- Daily Spending Tracker - Track today's spending with progress bar
+- Monthly Budget Management - Set and monitor daily/monthly limits
+- Transaction History - Filterable transaction log with search
+- Category Tracking - Organize spending across 10+ categories
+- Analytics & Insights - Detailed spending patterns and trends
 
-### Option 1 — Use it directly
-1. Download `index.html`
-2. Open it in any browser
-3. Start tracking!
+Integration
+- M-Pesa API Integration - Auto-import transactions via webhooks
+- Transaction Notifications - Receive real-time M-Pesa updates
+- Multi-currency Support - Track in KES, USD, EUR, GBP
 
-### Option 2 — Host it yourself
-1. Fork this repository
-2. Go to **Settings → Pages**
-3. Set source to `main` branch
-4. Your dashboard is live at `https://your-username.github.io/easy-money-flow`
+Design
+- M-Pesa Inspired UI - Signature green color scheme
+- Mobile-First - Responsive design for all devices
+- Modern Dashboard - Charts, heatmaps, and visualizations
+- Dark Mode Ready - Easy to add dark theme
 
----
-
-## 🔌 M-Pesa SMS Integration (Optional)
-
-Want your M-Pesa transactions to appear **automatically** with zero manual entry?
-
-See the [Backend Setup Guide](https://github.com/YOUR-USERNAME/easy-money-flow-backend) for the full M-Pesa SMS integration using:
-- **SMS Forwarder** Android app
-- **Node.js** backend server
-- **Glitch.com** free hosting
-
----
-
-## 🛠️ Tech Stack
-
-| Technology | Purpose |
-|---|---|
-| HTML5 | Structure |
-| CSS3 | Styling & animations |
-| Vanilla JavaScript | Logic & data management |
-| localStorage API | Data persistence |
-| SVG | Charts & sparklines |
+Security
+- SQLite Database - Lightweight, file-based persistence
+- User Authentication - Django built-in auth system
+- CSRF Protection - Enabled by default
+- Secure M-Pesa Integration - OAuth 2.0 authentication
 
 ---
 
-## 📁 Project Structure
+PROJECT STRUCTURE
 
-```
-easy-money-flow/
-└── index.html     ← Everything in one file (dashboard + styles + logic)
-```
+easy-money-flow-django/
+├── manage.py                    # Django management script
+├── requirements.txt             # Python dependencies
+├── .env.example                 # Environment variables template
+├── db.sqlite3                   # SQLite database (created after setup)
+│
+├── easy_money_flow/            # Project settings
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+├── tracker/                    # Main app
+│   ├── migrations/
+│   ├── models.py
+│   ├── views.py
+│   ├── forms.py
+│   ├── urls.py
+│   ├── admin.py
+│   ├── apps.py
+│   │
+│   ├── templates/
+│   │   ├── base.html
+│   │   └── tracker/
+│   │       ├── dashboard.html
+│   │       ├── add_transaction.html
+│   │       ├── transaction_list.html
+│   │       └── analytics.html
+│   │
+│   └── static/
+│       └── css/
+│
+├── api/                        # M-Pesa API handling
+│   ├── __init__.py
+│   ├── mpesa_integration.py
+│   ├── views.py
+│   └── urls.py
+│
+├── templates/
+├── static/css/
+└── logs/
 
 ---
 
-## 🎨 Design Inspiration
+QUICK START (5 MINUTES)
 
-The UI is inspired by the **M-Pesa mobile app** — Kenya's most widely used mobile money platform. The signature green (#00A651), white card layout, and mobile-first design make it feel familiar and trustworthy to Kenyan users.
+1. Prerequisites
+- Python 3.8+
+- pip
+- Git
+
+2. Clone & Setup
+
+mkdir easy-money-flow
+cd easy-money-flow
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate      # macOS/Linux
+# or
+venv\Scripts\activate         # Windows
+
+3. Install Dependencies
+
+pip install -r requirements.txt
+
+4. Configure Django
+
+The settings.py is already configured. Just update easy_money_flow/urls.py if needed.
+
+5. Initialize Database
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py collectstatic --noinput
+
+6. Run Server
+
+python manage.py runserver
+
+7. Access the app
+
+- Dashboard: http://localhost:8000/tracker/dashboard/
+- Admin: http://localhost:8000/admin/
+- Add Transaction: http://localhost:8000/tracker/add/
+- History: http://localhost:8000/tracker/history/
+- Analytics: http://localhost:8000/tracker/analytics/
 
 ---
 
-## 📌 Roadmap
+DATABASE MODELS
 
-- [x] Daily spending tracker with calendar heatmap
-- [x] Budget flow visualization
-- [x] 30-day trend sparkline
-- [x] M-Pesa themed UI
-- [ ] M-Pesa SMS auto-import
-- [ ] Monthly PDF report export
-- [ ] Multi-currency support
-- [ ] PWA (installable on phone)
+Transaction
+{
+    amount: Decimal
+    transaction_type: 'expense' or 'income'
+    category: ForeignKey(Category)
+    description: str
+    date: date
+    time: time
+    source: 'manual' or 'mpesa' or 'api' or 'bank'
+    mpesa_transaction_id: str (unique)
+}
+
+Budget
+{
+    daily_limit: Decimal
+    monthly_limit: Decimal
+    currency: 'KES' or 'USD' or 'EUR' or 'GBP'
+}
+
+Category
+{
+    name: str
+    icon: str
+}
+
+DailyLog
+{
+    date: date (unique)
+    total_expense: Decimal
+    total_income: Decimal
+    transaction_count: int
+    is_logged: bool
+}
 
 ---
 
-## 👤 Author
+M-PESA API SETUP
+
+1. Get Credentials
+- Go to https://developer.safaricom.co.ke
+- Register or login
+- Create a new app
+- Copy Consumer Key and Consumer Secret
+
+2. Configure Environment
+Create .env file:
+
+MPESA_CONSUMER_KEY=your_consumer_key
+MPESA_CONSUMER_SECRET=your_consumer_secret
+MPESA_ENVIRONMENT=sandbox
+
+3. Setup Webhook
+Update the callback URL in api/mpesa_integration.py:
+
+"CallBackURL": "https://yourdomain.com/api/mpesa/webhook/"
+
+---
+
+API ENDPOINTS
+
+Dashboard
+- GET /tracker/dashboard/ - Main dashboard
+
+Transactions
+- GET /tracker/add/ - Add transaction form
+- POST /tracker/add/ - Save new transaction
+- GET /tracker/history/ - Transaction history
+
+Analytics
+- GET /tracker/analytics/ - Analytics dashboard
+
+Budget
+- GET /tracker/budget/ - Budget settings form
+- POST /tracker/budget/ - Update budget
+
+M-Pesa Webhook
+- POST /api/mpesa/webhook/ - Receive transaction notifications
+
+---
+
+SECURITY CHECKLIST
+
+- Change SECRET_KEY (don't use development key)
+- Set DEBUG = False in production
+- Update ALLOWED_HOSTS with your domain
+- Use HTTPS only
+- Use environment variables for secrets
+- Enable CSRF_COOKIE_SECURE
+- Enable SESSION_COOKIE_SECURE
+- Configure CORS properly
+- Use strong password validators
+- Enable rate limiting for API
+
+---
+
+DEPLOYMENT
+
+Heroku
+
+echo "web: gunicorn easy_money_flow.wsgi" > Procfile
+echo "python-3.11.0" > runtime.txt
+
+heroku login
+heroku create your-app-name
+git push heroku main
+heroku run python manage.py migrate
+heroku open
+
+PythonAnywhere
+
+1. Create account at pythonanywhere.com
+2. Upload project
+3. Create web app with Django
+4. Configure static files
+5. Reload
+
+---
+
+TROUBLESHOOTING
+
+Database not found
+python manage.py migrate
+
+Static files not loading
+python manage.py collectstatic --clear
+
+M-Pesa API errors
+- Check credentials in .env
+- Verify callback URL is publicly accessible
+- Check M-Pesa app status on developer portal
+
+Template not found
+- Ensure app is in INSTALLED_APPS in settings.py
+- Check template path matches DIRS in settings
+
+---
+
+RESOURCES
+
+- Django Documentation: https://docs.djangoproject.com/
+- Django REST Framework: https://www.django-rest-framework.org/
+- M-Pesa API Docs: https://developer.safaricom.co.ke/docs
+- Python-Decouple: https://github.com/henriquebastos/python-decouple
+
+---
+
+CONTRIBUTING
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
+4. Push to the branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request
+
+---
+
+LICENSE
+
+This project is licensed under the MIT License.
+
+---
+
+AUTHOR
 
 Emmanuel Wangila Wakhongola
+GitHub: https://github.com/WangilaWakhongola
 
 ---
 
-## 📄 License
-
-MIT License — free to use, modify, and share.
+Last Updated: January 2024
+Version: 1.0.0

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Easy Money Flow{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">Dashboard</h1>
+
+<!-- Alert if over daily limit -->
+{% if is_over_daily %}
+<div class="alert alert-danger">
+    ⚠️ You've exceeded your daily budget limit of {{ budget.currency }} {{ daily_limit }}
+</div>
+{% endif %}
+
+<!-- Daily Summary -->
+<div class="card">
+    <div class="card-title">Today's Spending</div>
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div>
+            <div style="font-size: 28px; font-weight: 700; color: #00A651; margin: 10px 0;">
+                {{ budget.currency }} {{ today_expense }}
+            </div>
+            <div style="font-size: 14px; color: #757575;">Spent Today</div>
+        </div>
+        <div>
+            <div style="font-size: 28px; font-weight: 700; color: #0B5C2C; margin: 10px 0;">
+                {{ budget.currency }} {{ daily_remaining }}
+            </div>
+            <div style="font-size: 14px; color: #757575;">Remaining</div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Daily Progress</span>
+            <span style="font-weight: 600;">{{ daily_progress_percent|floatformat:0 }}%</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar {% if daily_progress_percent > 100 %}danger{% elif daily_progress_percent > 80 %}warning{% endif %}" 
+                 style="width: {{ daily_progress_percent|min:100 }}%;"></div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="/tracker/add/" class="btn btn-primary btn-block">+ Add Transaction</a>
+    </div>
+</div>
+
+<!-- Monthly Summary -->
+<div class="grid">
+    <div class="stat-card">
+        <div style="font-size: 24px;">📊</div>
+        <div class="stat-label">Monthly Income</div>
+        <div class="stat-value" style="color: #388E3C;">{{ budget.currency }} {{ month_income }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 24px;">💸</div>
+        <div class="stat-label">Monthly Expense</div>
+        <div class="stat-value" style="color: #D32F2F;">{{ budget.currency }} {{ month_expense }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 24px;">💰</div>
+        <div class="stat-label">Net Monthly</div>
+        <div class="stat-value" style="color: {% if month_net > 0 %}#388E3C{% else %}#D32F2F{% endif %};">
+            {{ budget.currency }} {{ month_net }}
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 24px;">🔥</div>
+        <div class="stat-label">Logging Streak</div>
+        <div class="stat-value">{{ consecutive_logged_days }} days</div>
+    </div>
+</div>
+
+<!-- Monthly Budget Progress -->
+<div class="card">
+    <div class="card-title">Monthly Budget Progress</div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span>Total Expenses vs Limit</span>
+        <span style="font-weight: 600;">{{ month_progress_percent|floatformat:0 }}%</span>
+    </div>
+    <div class="progress">
+        <div class="progress-bar {% if month_progress_percent > 100 %}danger{% elif month_progress_percent > 80 %}warning{% endif %}" 
+             style="width: {{ month_progress_percent|min:100 }}%;"></div>
+    </div>
+    <div style="margin-top: 12px; font-size: 12px; color: #757575;">
+        {{ budget.currency }} {{ month_expense }} of {{ budget.currency }} {{ budget.monthly_limit }}
+    </div>
+</div>
+
+<!-- Spending by Category -->
+{% if category_spending %}
+<div class="card">
+    <div class="card-title">Spending by Category (This Month)</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th style="text-align: right;">Amount</th>
+                <th style="text-align: right;">%</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in category_spending %}
+                <tr>
+                    <td>{{ item.category__name|default:"Other" }}</td>
+                    <td style="text-align: right; font-weight: 600;">{{ budget.currency }} {{ item.total }}</td>
+                    <td style="text-align: right; color: #757575;">
+                        {% widthratio item.total month_expense 100 %}%
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Recent Transactions -->
+<div class="card">
+    <div class="card-title">Today's Transactions ({{ transaction_count_today }})</div>
+    {% if transaction_count_today > 0 %}
+        <!-- You can fetch and display today's transactions here -->
+        <p style="color: #757575;">View all transactions in <a href="/tracker/history/">History</a></p>
+    {% else %}
+        <p style="color: #757575; text-align: center; padding: 20px;">No transactions today yet.</p>
+    {% endif %}
+</div>
+
+<!-- Quick Stats -->
+<div class="grid">
+    <div class="card">
+        <div style="font-size: 14px; color: #757575; margin-bottom: 10px;">Daily Average</div>
+        <div style="font-size: 24px; font-weight: 700;">
+            {{ budget.currency }} {{ daily_limit }}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div style="font-size: 14px; color: #757575; margin-bottom: 10px;">Days Remaining</div>
+        <div style="font-size: 24px; font-weight: 700;">
+            {% now "d" as current_day %}
+            {% now "j" as days_in_month %}
+            {{ days_in_month|add:"-"|add:current_day|add:"1" }}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

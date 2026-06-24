@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Easy Money Flow{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">Analytics & Insights</h1>
+
+<!-- Key Metrics -->
+<div class="grid">
+    <div class="stat-card">
+        <div style="font-size: 24px;">📈</div>
+        <div class="stat-label">Average Daily Spending</div>
+        <div class="stat-value">KES {{ average_daily_expense|floatformat:0 }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 24px;">📊</div>
+        <div class="stat-label">Highest Spending Day</div>
+        <div class="stat-value">
+            {% if top_spending_days.0 %}
+                KES {{ top_spending_days.0.total_expense }}
+            {% else %}
+                —
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 24px;">🎯</div>
+        <div class="stat-label">Total Categories</div>
+        <div class="stat-value">{{ category_data|length }}</div>
+    </div>
+</div>
+
+<!-- Weekly Breakdown -->
+<div class="card">
+    <div class="card-title">Weekly Breakdown (Last 7 Days)</div>
+    {% if weekly_data %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th style="text-align: right;">Expense</th>
+                    <th style="text-align: right;">Income</th>
+                    <th style="text-align: right;">Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in weekly_data %}
+                    <tr>
+                        <td>{{ day.date|date:"D, d M" }}</td>
+                        <td style="text-align: right; color: #D32F2F;">
+                            KES {{ day.expense|default:"0" }}
+                        </td>
+                        <td style="text-align: right; color: #388E3C;">
+                            KES {{ day.income|default:"0" }}
+                        </td>
+                        <td style="text-align: right; font-weight: 600;">
+                            {% with net=day.income|add:"-"|add:day.expense %}
+                            <span style="color: {% if net > 0 %}#388E3C{% else %}#D32F2F{% endif %};">
+                                KES {{ net }}
+                            </span>
+                            {% endwith %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #757575; text-align: center; padding: 20px;">No data available</p>
+    {% endif %}
+</div>
+
+<!-- Category Breakdown -->
+<div class="card">
+    <div class="card-title">Category Breakdown (Last 30 Days)</div>
+    {% if category_data %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            {% for cat in category_data %}
+                <div style="padding: 16px; background: #FAFAFA; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">{{ cat.category__name|default:"Other" }}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #00A651; margin-bottom: 4px;">
+                        KES {{ cat.total }}
+                    </div>
+                    <div style="font-size: 12px; color: #757575;">
+                        {{ cat.count }} transaction{{ cat.count|pluralize }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #757575; text-align: center; padding: 20px;">No category data available</p>
+    {% endif %}
+</div>
+
+<!-- Top Spending Days -->
+<div class="card">
+    <div class="card-title">Top 10 Spending Days (Last 30 Days)</div>
+    {% if top_spending_days %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th style="text-align: right;">Expense</th>
+                    <th style="text-align: right;">Income</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in top_spending_days %}
+                    <tr>
+                        <td>{{ day.date|date:"d M, D" }}</td>
+                        <td style="text-align: right;">
+                            <span style="color: #D32F2F; font-weight: 600;">
+                                KES {{ day.total_expense }}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <span style="color: #388E3C; font-weight: 600;">
+                                KES {{ day.total_income|default:"0" }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #757575; text-align: center; padding: 20px;">No data available</p>
+    {% endif %}
+</div>
+
+<!-- Insights -->
+<div class="card">
+    <div class="card-title">💡 Insights</div>
+    <div style="display: grid; gap: 12px;">
+        <div style="padding: 12px; background: #E8F5E9; border-radius: 8px; border-left: 4px solid #388E3C;">
+            <strong>Highest Spending Category:</strong>
+            {% if category_data.0 %}
+                {{ category_data.0.category__name|default:"Other" }} (KES {{ category_data.0.total }})
+            {% else %}
+                No data
+            {% endif %}
+        </div>
+        
+        <div style="padding: 12px; background: #FFF3E0; border-radius: 8px; border-left: 4px solid #F57C00;">
+            <strong>Average Daily Spending:</strong>
+            KES {{ average_daily_expense|floatformat:0 }} per day
+        </div>
+        
+        <div style="padding: 12px; background: #E3F2FD; border-radius: 8px; border-left: 4px solid #1976D2;">
+            <strong>Most Active Day:</strong>
+            {% if top_spending_days.0 %}
+                {{ top_spending_days.0.date|date:"D, d M" }}
+            {% else %}
+                No data
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

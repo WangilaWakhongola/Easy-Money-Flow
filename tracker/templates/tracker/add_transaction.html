@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Add Transaction - Easy Money Flow{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">Add Transaction</h1>
+
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <!-- Current Budget Info -->
+    <div style="background: #E8F5E9; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #00A651;">
+        <div style="font-size: 12px; color: #0B5C2C; margin-bottom: 4px;">TODAY'S LIMIT</div>
+        <div style="font-size: 20px; font-weight: 700; color: #00A651;">{{ budget.currency }} {{ budget.daily_limit }}</div>
+    </div>
+    
+    <form method="post" class="form">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <!-- Amount -->
+        <div class="form-group">
+            <label for="{{ form.amount.id_for_label }}">Amount *</label>
+            {{ form.amount }}
+            {% if form.amount.errors %}
+                <small style="color: #D32F2F;">{{ form.amount.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Transaction Type -->
+        <div class="form-group">
+            <label for="{{ form.transaction_type.id_for_label }}">Type *</label>
+            {{ form.transaction_type }}
+            {% if form.transaction_type.errors %}
+                <small style="color: #D32F2F;">{{ form.transaction_type.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Category -->
+        <div class="form-group">
+            <label for="{{ form.category.id_for_label }}">Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}
+                <small style="color: #D32F2F;">{{ form.category.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Description -->
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <small style="color: #D32F2F;">{{ form.description.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Date -->
+        <div class="form-group">
+            <label for="{{ form.date.id_for_label }}">Date *</label>
+            {{ form.date }}
+            {% if form.date.errors %}
+                <small style="color: #D32F2F;">{{ form.date.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Time -->
+        <div class="form-group">
+            <label for="{{ form.time.id_for_label }}">Time</label>
+            {{ form.time }}
+            {% if form.time.errors %}
+                <small style="color: #D32F2F;">{{ form.time.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Source -->
+        <div class="form-group">
+            <label for="{{ form.source.id_for_label }}">Source</label>
+            {{ form.source }}
+            {% if form.source.errors %}
+                <small style="color: #D32F2F;">{{ form.source.errors.0 }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Buttons -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px;">
+            <button type="submit" class="btn btn-primary">Save Transaction</button>
+            <a href="/tracker/dashboard/" class="btn btn-secondary" style="text-align: center;">Cancel</a>
+        </div>
+    </form>
+    
+    <!-- Quick Add Options -->
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
+        <div style="font-size: 12px; color: #757575; margin-bottom: 12px; text-transform: uppercase;">Quick Add</div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <button class="btn btn-secondary" onclick="quickAdd('Lunch', 'food', 250)">🍽️ Lunch</button>
+            <button class="btn btn-secondary" onclick="quickAdd('Transport', 'transport', 100)">🚕 Transport</button>
+            <button class="btn btn-secondary" onclick="quickAdd('Coffee', 'food', 150)">☕ Coffee</button>
+            <button class="btn btn-secondary" onclick="quickAdd('Shopping', 'shopping', 500)">🛍️ Shopping</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function quickAdd(description, category, amount) {
+        document.querySelector('input[name="amount"]').value = amount;
+        document.querySelector('select[name="description"]').value = description;
+        // Set category if available
+        document.querySelector('textarea[name="description"]').value = description;
+    }
+</script>
+
+{% endblock %}

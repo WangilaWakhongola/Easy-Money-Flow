@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History - Easy Money Flow{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">Transaction History</h1>
+
+<!-- Filters -->
+<div class="card">
+    <div class="card-title">Filters</div>
+    <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="type">Type</label>
+            <select name="type" id="type" class="form-control">
+                <option value="">All</option>
+                <option value="expense" {% if request.GET.type == 'expense' %}selected{% endif %}>Expenses</option>
+                <option value="income" {% if request.GET.type == 'income' %}selected{% endif %}>Income</option>
+            </select>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="category">Category</label>
+            <select name="category" id="category" class="form-control">
+                <option value="">All</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.name }}" {% if request.GET.category == cat.name %}selected{% endif %}>
+                        {{ cat.get_name_display }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="start_date">From</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" 
+                   value="{{ request.GET.start_date }}">
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="end_date">To</label>
+            <input type="date" name="end_date" id="end_date" class="form-control" 
+                   value="{{ request.GET.end_date }}">
+        </div>
+        
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Filter</button>
+            <a href="/tracker/history/" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Stats -->
+<div class="grid">
+    <div class="stat-card">
+        <div style="font-size: 14px; color: #757575;">Total Transactions</div>
+        <div class="stat-value">{{ page_obj.paginator.count }}</div>
+    </div>
+    
+    {% if request.GET.type == 'expense' or not request.GET.type %}
+    <div class="stat-card">
+        <div style="font-size: 14px; color: #757575;">Total Expense</div>
+        <div class="stat-value" style="color: #D32F2F;">KES {{ total_expense }}</div>
+    </div>
+    {% endif %}
+    
+    {% if request.GET.type == 'income' or not request.GET.type %}
+    <div class="stat-card">
+        <div style="font-size: 14px; color: #757575;">Total Income</div>
+        <div class="stat-value" style="color: #388E3C;">KES {{ total_income }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Transactions List -->
+<div class="card">
+    {% if object_list %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th style="text-align: right;">Amount</th>
+                    <th style="text-align: center;">Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in object_list %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">{{ transaction.date }}</div>
+                            <div style="font-size: 12px; color: #757575;">{{ transaction.time|time:"H:i" }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">{{ transaction.description|default:"No description" }}</div>
+                            <div style="font-size: 12px; color: #757575;">{{ transaction.get_source_display }}</div>
+                        </td>
+                        <td>{{ transaction.category.get_name_display|default:"—" }}</td>
+                        <td style="text-align: right; font-weight: 600;">
+                            <span style="color: {% if transaction.transaction_type == 'expense' %}#D32F2F{% else %}#388E3C{% endif %};">
+                                {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}{{ transaction.amount }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 4px; background: 
+                            {% if transaction.transaction_type == 'expense' %}#FFEBEE; color: #D32F2F;{% else %}#E8F5E9; color: #388E3C;{% endif %}">
+                                {{ transaction.get_transaction_type_display }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <div style="margin-top: 20px; text-align: center;">
+                <div style="margin-bottom: 12px;">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </div>
+                <div>
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="btn btn-secondary" style="margin: 0 4px;">First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="margin: 0 4px;">Previous</a>
+                    {% endif %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="margin: 0 4px;">Next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary" style="margin: 0 4px;">Last</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <div style="text-align: center; padding: 40px 20px; color: #757575;">
+            <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+            <p>No transactions found matching your filters.</p>
+            <a href="/tracker/add/" class="btn btn-primary" style="margin-top: 12px;">Add Your First Transaction</a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
